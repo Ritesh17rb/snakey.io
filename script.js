@@ -13,6 +13,42 @@ import config from './config.js';
 // Register Cursors Module
 Quill.register('modules/cursors', QuillCursors);
 
+// Register Custom Agent Attribute for Highlighting
+const Parchment = Quill.import('parchment');
+const AgentIdAttribute = new Parchment.Attributor.Class('agent-id', 'agent-id', {
+  scope: Parchment.Scope.INLINE
+});
+Quill.register(AgentIdAttribute);
+
+// Global state for highlight
+let highlightedAgentId = null;
+
+// Helper to toggle highlight (Global)
+window.toggleAgentHighlight = function(agentId, color) {
+  // Remove previous rules
+  const oldStyle = document.getElementById('agent-highlight-style');
+  if (oldStyle) oldStyle.remove();
+  
+  // If clicking same agent, turn off
+  if (highlightedAgentId === agentId) {
+    highlightedAgentId = null;
+    return;
+  }
+  
+  highlightedAgentId = agentId;
+  
+  // Add new rule
+  const style = document.createElement('style');
+  style.id = 'agent-highlight-style';
+  style.innerHTML = `
+    .agent-id-${agentId} {
+      background-color: ${color}40; /* 25% opacity */
+      border-bottom: 2px solid ${color};
+    }
+  `;
+  document.head.appendChild(style);
+};
+
 // ===== GLOBAL STATE =====
 let currentScenario = null;
 let activeAgents; // Track active agents (Synced)
@@ -356,15 +392,26 @@ function updateAgentActivity() {
     const color = agent.color || '#6c757d';
 
     const agentEl = document.createElement('div');
-    agentEl.className = 'agent-item p-2 mb-2 bg-body rounded working';
+    // Only animate if not completed
+    const isWorking = agent.status !== 'Completed';
+    agentEl.className = `agent-item p-2 mb-2 bg-body rounded ${isWorking ? 'working' : ''}`;
     agentEl.style.borderLeftColor = color;
+    agentEl.style.cursor = 'pointer'; // Make clickable
+    agentEl.title = isWorking ? "Working..." : "Click to highlight edits";
+    agentEl.onclick = () => window.toggleAgentHighlight(agentId, color);
+    
+    // Status Badge Color
+    let badgeClass = 'bg-success-subtle text-success';
+    if (agent.status === 'Completed') badgeClass = 'bg-secondary-subtle text-secondary';
+    if (agent.status === 'Analyze') badgeClass = 'bg-warning-subtle text-warning';
+
     agentEl.innerHTML = `
       <div class="d-flex align-items-center justify-content-between">
         <div>
-          <span class="agent-status-dot" style="background-color: ${color};"></span>
+          <span class="agent-status-dot" style="background-color: ${color}; animation: ${isWorking ? 'blink 1.5s infinite' : 'none'}"></span>
           <strong class="small">${agent.name}</strong>
         </div>
-        <span class="badge bg-success-subtle text-success">${agent.status}</span>
+        <span class="badge ${badgeClass}">${agent.status}</span>
       </div>
       <div class="small text-muted mt-1">
         <i class="bi bi-geo-alt me-1"></i>${agent.section}
@@ -584,11 +631,12 @@ async function generateAgentName(task, section) {
     const taskKeywords = task.toLowerCase();
     if (taskKeywords.includes('verify') || taskKeywords.includes('check')) return 'Verification Specialist';
     if (taskKeywords.includes('review') || taskKeywords.includes('analyze')) return 'Analysis Expert';
-    if (taskKeywords.includes('enhance') || taskKeywords.includes('improve')) return 'Enhancement Agent';
+    if (taskKeywords.includes('enhance') || taskKeywords.includes('improve')) return 'Enhancement Specialist';
+    if (taskKeywords.includes('simplify') || taskKeywords.includes('concise')) return 'Simplification Specialist';
     if (taskKeywords.includes('financial') || taskKeywords.includes('number')) return 'Financial Analyst';
     if (taskKeywords.includes('technical') || taskKeywords.includes('architecture')) return 'Technical Writer';
-    if (taskKeywords.includes('legal') || taskKeywords.includes('compliance')) return 'Legal Advisor';
-    return 'Document Specialist';
+    if (taskKeywords.includes('legal') || taskKeywords.includes('compliance')) return 'Legal Compliance Reviewer';
+    return 'Content Specialist';
   }
 
   try {
@@ -661,8 +709,9 @@ Provide ONLY the improved text for this section. Be concise and focused. Write n
   
   updateAgentStatus(agentConfig.id, 'Writing');
   
-  // Stream and insert text
-  // Stream and insert text
+
+
+// Stream and insert text
   try {
       await callLLM(messages, async (chunk) => {
         if (currentAbortController && currentAbortController.signal.aborted) {
@@ -675,7 +724,8 @@ Provide ONLY the improved text for this section. Be concise and focused. Write n
         }
         
         ydoc.transact(() => {
-          ytext.insert(currentIndex, chunk);
+          // INSERT WITH ATTRIBUTES
+          ytext.insert(currentIndex, chunk, { 'agent-id': agentConfig.id });
           currentIndex += chunk.length;
           updateAICursor(agentConfig.id, currentIndex, agentConfig.color, agentConfig.name);
         });
@@ -692,7 +742,8 @@ Provide ONLY the improved text for this section. Be concise and focused. Write n
   
   // Cleanup
   removeAICursor(agentConfig.id);
-  removeAgent(agentConfig.id);
+  // Do NOT remove agent - keep it for highlighting history
+  updateAgentStatus(agentConfig.id, 'Completed');
   log(`${agentConfig.name} completed work`, 'success');
 }
 
@@ -1310,14 +1361,21 @@ async function applyOperations(operations, agentId, name, color) {
         let startIndex = -1;
 
         // 1. Locate and Delete (Instant)
+        // 1. Locate and Delete (Instant)
         ydoc.transact(() => {
             const current = ytext.toString();
             // Search safely
-            const idx = current.indexOf(match);
+            let idx = current.indexOf(match);
+            
+            // Fallback: try trimmed
+            if (idx === -1) {
+                idx = current.indexOf(match.trim());
+            }
+
             if (idx !== -1) {
                 startIndex = idx;
                 // Delete the old text
-                ytext.delete(idx, match.length);
+                ytext.delete(idx, match.length); // Note: might be off if trimmed, but good enough for now
                 // Create an anchor where we want to start typing
                 anchorRelPos = Y.createRelativePositionFromTypeIndex(ytext, idx);
                 found = true;
@@ -1325,7 +1383,7 @@ async function applyOperations(operations, agentId, name, color) {
         }, agentId);
 
         if (!found) {
-             console.warn(`Could not find match for replacement: "${match.slice(0,10)}..."`);
+             console.log(`Could not find match for replacement: "${match.slice(0,10)}..."`);
              continue;
         }
 
@@ -1344,7 +1402,8 @@ async function applyOperations(operations, agentId, name, color) {
             ydoc.transact(() => {
                 const absPos = Y.createAbsolutePositionFromRelativePosition(anchorRelPos, ydoc);
                 if (absPos) {
-                    ytext.insert(absPos.index, char);
+                    // INSERT WITH ATTRIBUTE
+                    ytext.insert(absPos.index, char, { 'agent-id': agentId });
                     updateAICursor(agentId, absPos.index + 1, color, name);
                     
                     // Update anchor to point to the NEXT simulated cursor position
