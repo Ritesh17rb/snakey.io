@@ -24,6 +24,7 @@ Quill.register(AgentIdAttribute);
 let highlightedAgentId = null;
 
 // Helper to toggle highlight (Global)
+// Helper to toggle highlight (Global)
 window.toggleAgentHighlight = function(agentId, color) {
   // Remove previous rules
   const oldStyle = document.getElementById('agent-highlight-style');
@@ -37,16 +38,40 @@ window.toggleAgentHighlight = function(agentId, color) {
   
   highlightedAgentId = agentId;
   
-  // Add new rule
+  // Add new rule with improved styling for continuity
   const style = document.createElement('style');
   style.id = 'agent-highlight-style';
   style.innerHTML = `
     .agent-id-${agentId} {
-      background-color: ${color}40; /* 25% opacity */
-      border-bottom: 2px solid ${color};
+      background-color: ${color}40 !important;
+      border-bottom: 2px solid ${color} !important;
+      box-decoration-break: clone;
+      -webkit-box-decoration-break: clone;
+      padding-top: 2px;
+      padding-bottom: 2px;
+      margin: 0;
     }
   `;
   document.head.appendChild(style);
+
+  // Scroll to edit
+  setTimeout(() => {
+     const editorContainer = document.querySelector('.ql-editor');
+     if (editorContainer) {
+         const match = editorContainer.querySelector(`.agent-id-${agentId}`);
+         if (match) {
+             match.scrollIntoView({ behavior: 'smooth', block: 'center' });
+             // Optional: visual cue
+             const originalTransition = match.style.transition;
+             match.style.transition = "background-color 0.5s ease";
+             match.style.backgroundColor = `${color}80`;
+             setTimeout(() => {
+                 match.style.backgroundColor = "";
+                 match.style.transition = originalTransition;
+             }, 800);
+         }
+     }
+  }, 50);
 };
 
 // ===== GLOBAL STATE =====
@@ -1084,10 +1109,20 @@ RETURN JSON: { operations: [{ match: "string", replacement: "string" }] }`
   } catch (error) {
     agentManager.failAgent(agentId, error.message);
     log(`${agentConfig.name} error: ${error.message}`, 'error');
+    updateAgentStatus(agentConfig.id, 'Failed');
   } finally {
-    // Cleanup - remove from UI (Active Agents List)
+    // Cleanup - remove cursor but KEEP agent in UI for history/highlighting
     removeAICursor(agentConfig.id);
-    removeAgent(agentConfig.id);
+    // removeAgent(agentConfig.id); // <-- This was causing them to disappear
+    
+    // Ensure final status is visually correct if not failed
+    const finalState = activeAgents.get(agentConfig.id);
+    if (finalState) {
+        const state = JSON.parse(finalState);
+        if (state.status !== 'Failed') {
+            updateAgentStatus(agentConfig.id, 'Completed');
+        }
+    }
   }
 }
 
@@ -1412,4 +1447,24 @@ async function applyOperations(operations, agentId, name, color) {
             }, agentId);
         }
     }
+}
+
+// Clear Agents Button Logic
+const clearBtn = document.getElementById('btn-clear-agents');
+if (clearBtn) {
+  clearBtn.addEventListener('click', () => {
+    // Clear Yjs map
+    activeAgents.forEach((_, id) => {
+      // Maybe keep cursors? No, clear all history.
+      removeAICursor(id);
+    });
+    activeAgents.clear();
+    
+    // Clear highlight styles
+    const oldStyle = document.getElementById('agent-highlight-style');
+    if (oldStyle) oldStyle.remove();
+    highlightedAgentId = null; // Reset global tracking var
+
+    log('Cleared agent activity history.', 'info');
+  });
 }
