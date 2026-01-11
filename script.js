@@ -834,3 +834,34 @@ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () 
     setTheme(getPreferredTheme());
   }
 });
+
+// ===== MOBILE SIDEBAR TOGGLE =====
+const sidebarToggleBtn = document.getElementById('sidebar-toggle-btn');
+const sidebar = document.querySelector('.sidebar');
+
+if (sidebarToggleBtn && sidebar) {
+  sidebarToggleBtn.addEventListener('click', () => {
+    sidebar.classList.toggle('active');
+    
+    // Change icon based on state
+    const icon = sidebarToggleBtn.querySelector('i');
+    if (sidebar.classList.contains('active')) {
+      icon.className = 'bi bi-x-lg';
+    } else {
+      icon.className = 'bi bi-layout-sidebar-inset-reverse';
+    }
+  });
+
+  // Close sidebar when clicking outside on mobile
+  document.addEventListener('click', (e) => {
+    if (window.innerWidth <= 991) {
+      if (sidebar.classList.contains('active') && 
+          !sidebar.contains(e.target) && 
+          !sidebarToggleBtn.contains(e.target)) {
+        sidebar.classList.remove('active');
+        const icon = sidebarToggleBtn.querySelector('i');
+        icon.className = 'bi bi-layout-sidebar-inset-reverse';
+      }
+    }
+  });
+}

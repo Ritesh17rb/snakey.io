@@ -34,54 +34,62 @@
 
 <body>
   <!-- Navigation -->
-  <nav class="navbar navbar-dark bg-dark border-bottom border-secondary shadow-sm">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark border-bottom border-secondary shadow-sm">
     <div class="container-fluid px-4">
       <a class="navbar-brand d-flex align-items-center gap-2" href="/">
         <span class="brand-emoji">🐍</span>
         <span class="brand-text">snakey.io</span>
       </a>
 
-      <div class="d-flex align-items-center gap-3">
-        <!-- Connection Status -->
-        <div class="connection-status d-flex align-items-center gap-2 px-3 py-2 rounded">
-          <span id="connection-dot" class="status-dot bg-warning"></span>
-          <span id="connection-text" class="small">Connecting...</span>
-        </div>
+      <!-- Hamburger Toggle Button -->
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarControls"
+        aria-controls="navbarControls" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
 
-        <!-- User Count -->
-        <div class="user-count-badge">
-          <i class="bi bi-people-fill me-1"></i>
-          <span id="user-count">1</span>
-        </div>
+      <div class="collapse navbar-collapse" id="navbarControls">
+        <div class="d-flex align-items-center gap-3 ms-auto flex-column flex-lg-row mt-3 mt-lg-0">
+          <!-- Connection Status -->
+          <div class="connection-status d-flex align-items-center gap-2 px-3 py-2 rounded">
+            <span id="connection-dot" class="status-dot bg-warning"></span>
+            <span id="connection-text" class="small">Connecting...</span>
+          </div>
 
-        <!-- Share Button -->
-        <button id="btn-share" class="btn btn-primary btn-sm">
-          <i class="bi bi-share-fill me-1"></i>
-          Share
-        </button>
+          <!-- User Count -->
+          <div class="user-count-badge">
+            <i class="bi bi-people-fill me-1"></i>
+            <span id="user-count">1</span>
+          </div>
 
-        <!-- New Session Button -->
-        <button id="btn-new-session" class="btn btn-outline-success btn-sm">
-          <i class="bi bi-plus-lg me-1"></i>
-          New
-        </button>
-
-        <!-- Theme Toggle -->
-        <div class="dropdown">
-          <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
-            <i class="bi bi-circle-half"></i>
+          <!-- Share Button -->
+          <button id="btn-share" class="btn btn-primary btn-sm">
+            <i class="bi bi-share-fill me-1"></i>
+            Share
           </button>
-          <ul class="dropdown-menu dropdown-menu-end">
-            <li><button class="dropdown-item" data-bs-theme-value="light">
-                <i class="me-2 bi bi-sun-fill"></i> Light
-              </button></li>
-            <li><button class="dropdown-item active" data-bs-theme-value="dark">
-                <i class="me-2 bi bi-moon-stars-fill"></i> Dark
-              </button></li>
-            <li><button class="dropdown-item" data-bs-theme-value="auto">
-                <i class="me-2 bi bi-circle-half"></i> Auto
-              </button></li>
-          </ul>
+
+          <!-- New Session Button -->
+          <button id="btn-new-session" class="btn btn-outline-success btn-sm">
+            <i class="bi bi-plus-lg me-1"></i>
+            New
+          </button>
+
+          <!-- Theme Toggle -->
+          <div class="dropdown">
+            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+              <i class="bi bi-circle-half"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><button class="dropdown-item" data-bs-theme-value="light">
+                  <i class="me-2 bi bi-sun-fill"></i> Light
+                </button></li>
+              <li><button class="dropdown-item active" data-bs-theme-value="dark">
+                  <i class="me-2 bi bi-moon-stars-fill"></i> Dark
+                </button></li>
+              <li><button class="dropdown-item" data-bs-theme-value="auto">
+                  <i class="me-2 bi bi-circle-half"></i> Auto
+                </button></li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
@@ -289,6 +297,12 @@
       </div>
     </div>
   </div>
+
+  <!-- Floating Sidebar Toggle Button (Mobile Only) -->
+  <button id="sidebar-toggle-btn" class="btn btn-primary rounded-circle shadow-lg"
+    style="position: fixed; bottom: 20px; right: 20px; width: 56px; height: 56px; z-index: 1050; display: none;">
+    <i class="bi bi-layout-sidebar-inset-reverse" style="font-size: 1.5rem;"></i>
+  </button>
 
   <!-- Scripts -->
   <script type="importmap">
