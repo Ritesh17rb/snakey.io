@@ -1,10 +1,21 @@
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="light">
+<html lang="en" data-bs-theme="dark">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Parallel Editing</title>
+  <title>snakey.io - Collaborative Code Editor</title>
+
+  <!-- SEO Meta Tags -->
+  <meta name="description"
+    content="snakey.io - A modern, real-time collaborative code editor. Share code instantly with a simple link.">
+  <meta name="keywords" content="collaborative editor, code sharing, real-time editing, pair programming">
+
+  <!-- Favicon -->
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐍</text></svg>">
+
+  <!-- Stylesheets -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
   <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
@@ -14,469 +25,284 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Roboto:wght@300;400;500;700&family=Aref+Ruqaa:wght@400;700&family=Inconsolata:wght@400;700&family=Merriweather:wght@300;400;700&family=Playfair+Display:wght@400;700&family=EB+Garamond:wght@400;700&family=Open+Sans:wght@300;400;600;700&family=Lato:wght@300;400;700&family=Montserrat:wght@300;400;500;700&family=Poppins:wght@300;400;500;700&family=Raleway:wght@300;400;700&family=Fira+Code:wght@400;500;700&family=Source+Code+Pro:wght@400;700&family=Ubuntu+Mono:wght@400;700&family=Dancing+Script:wght@400;700&family=Pacifico&display=swap"
     rel="stylesheet">
 
   <!-- Custom Styles -->
   <link rel="stylesheet" href="styles.css">
-
-  <style>
-    #editor-container {
-      height: 70vh;
-      font-family: 'Georgia', serif;
-      font-size: 1.1rem;
-    }
-
-    .ai-active-border {
-      border: 2px solid #0d6efd !important;
-      transition: border 0.3s;
-    }
-
-    #suggestion-toolbar {
-      z-index: 1000;
-      display: none;
-      position: absolute;
-    }
-
-    /* Make Cursors Pop */
-    .ql-cursor-caret-container {
-      z-index: 100 !important;
-    }
-
-    .ql-cursor-flag {
-      white-space: nowrap;
-      font-size: 12px;
-      font-weight: bold;
-      padding: 2px 6px;
-      /* Force Visibility */
-      border-bottom-left-radius: 0 !important;
-      opacity: 1 !important;
-      visibility: visible !important;
-      display: block !important;
-      transition: none !important;
-    }
-
-    /* Ensure the flag container is also visible */
-    .ql-cursor-flag-container {
-      opacity: 1 !important;
-      visibility: visible !important;
-      display: block !important;
-    }
-
-    /* Demo Cards */
-    .demo-card {
-      cursor: pointer;
-      transition: all 0.3s ease;
-      border: 2px solid transparent;
-      background: linear-gradient(135deg, var(--bs-body-bg) 0%, var(--bs-secondary-bg) 100%);
-    }
-
-    .demo-card:hover {
-      transform: translateY(-4px);
-      border-color: var(--bs-primary);
-      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-    }
-
-    .demo-card.active {
-      border-color: var(--bs-success);
-      background: linear-gradient(135deg, var(--bs-success-bg-subtle) 0%, var(--bs-primary-bg-subtle) 100%);
-    }
-
-    /* Agent Activity Panel */
-    .agent-item {
-      border-left: 4px solid;
-      transition: all 0.3s ease;
-      animation: slideIn 0.3s ease;
-    }
-
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateX(-20px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateX(0);
-      }
-    }
-
-    /* Agent animations moved to styles.css for better control */
-
-    /* Sample Prompts */
-    .sample-prompt {
-      cursor: pointer;
-      transition: all 0.2s ease;
-      border-left: 3px solid var(--bs-primary);
-    }
-
-    .sample-prompt:hover {
-      background-color: var(--bs-primary-bg-subtle);
-      border-left-width: 5px;
-      transform: translateX(5px);
-    }
-
-    /* Highlight sections being edited */
-    .agent-highlight {
-      background-color: rgba(255, 235, 59, 0.2);
-      border-left: 4px solid;
-      padding-left: 8px;
-      transition: all 0.3s ease;
-    }
-  </style>
 </head>
 
 <body>
-  <nav class="navbar navbar-expand-lg navbar-dark bg-dark border-bottom border-secondary shadow-sm">
-    <div class="container-fluid">
-      <a class="navbar-brand d-flex align-items-center gap-2" href=".">
-        <span class="fw-bold">Parallel Edit</span>
+  <!-- Navigation -->
+  <nav class="navbar navbar-dark bg-dark border-bottom border-secondary shadow-sm">
+    <div class="container-fluid px-4">
+      <a class="navbar-brand d-flex align-items-center gap-2" href="/">
+        <span class="brand-emoji">🐍</span>
+        <span class="brand-text">snakey.io</span>
       </a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="navbarSupportedContent">
-        <div class="navbar-nav me-auto mb-2 mb-lg-0 align-items-center gap-3">
-          <div
-            class="d-flex align-items-center rounded bg-secondary bg-opacity-25 px-3 py-1 text-light border border-secondary">
-            <span id="connection-status-dot" class="d-inline-block rounded-circle bg-warning me-2"
-              style="width: 8px; height: 8px;"></span>
-            <span id="connection-status-text" class="small">Connecting...</span>
-          </div>
+
+      <div class="d-flex align-items-center gap-3">
+        <!-- Connection Status -->
+        <div class="connection-status d-flex align-items-center gap-2 px-3 py-2 rounded">
+          <span id="connection-dot" class="status-dot bg-warning"></span>
+          <span id="connection-text" class="small">Connecting...</span>
         </div>
 
-        <div class="ms-auto d-flex align-items-center gap-3">
-          <span class="badge bg-dark border border-secondary text-light"><i class="bi bi-people-fill me-1"></i> <span
-              id="user-count">1</span></span>
-          <button id="btn-new-session" class="btn btn-sm btn-outline-success"><i class="bi bi-plus-lg"></i> New
-            Session</button>
-          <button id="btn-share" class="btn btn-sm btn-outline-light"><i class="bi bi-share-fill"></i> Share</button>
-          <button class="btn btn-sm btn-outline-light" data-bs-toggle="modal" data-bs-target="#llmConfigModal"><i
-              class="bi bi-gear-fill"></i> Config</button>
+        <!-- User Count -->
+        <div class="user-count-badge">
+          <i class="bi bi-people-fill me-1"></i>
+          <span id="user-count">1</span>
+        </div>
 
-          <div class="nav-item dropdown" role="group">
-            <button class="dark-theme-toggle btn btn-outline-secondary btn-sm dropdown-toggle text-light" type="button"
-              data-bs-toggle="dropdown">
-              <i class="bi bi-circle-half"></i>
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end">
-              <li><button class="dropdown-item active" data-bs-theme-value="light"><i class="me-2 bi bi-sun-fill"></i>
-                  Light</button></li>
-              <li><button class="dropdown-item" data-bs-theme-value="dark"><i class="me-2 bi bi-moon-stars-fill"></i>
-                  Dark</button></li>
-              <li><button class="dropdown-item" data-bs-theme-value="auto"><i class="me-2 bi bi-circle-half"></i>
-                  Auto</button></li>
-            </ul>
-          </div>
+        <!-- Share Button -->
+        <button id="btn-share" class="btn btn-primary btn-sm">
+          <i class="bi bi-share-fill me-1"></i>
+          Share
+        </button>
+
+        <!-- New Session Button -->
+        <button id="btn-new-session" class="btn btn-outline-success btn-sm">
+          <i class="bi bi-plus-lg me-1"></i>
+          New
+        </button>
+
+        <!-- Theme Toggle -->
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+            <i class="bi bi-circle-half"></i>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><button class="dropdown-item" data-bs-theme-value="light">
+                <i class="me-2 bi bi-sun-fill"></i> Light
+              </button></li>
+            <li><button class="dropdown-item active" data-bs-theme-value="dark">
+                <i class="me-2 bi bi-moon-stars-fill"></i> Dark
+              </button></li>
+            <li><button class="dropdown-item" data-bs-theme-value="auto">
+                <i class="me-2 bi bi-circle-half"></i> Auto
+              </button></li>
+          </ul>
         </div>
       </div>
     </div>
   </nav>
 
-  <div id="main-app" class="container-fluid mt-4">
-    <!-- Hero / Intro Section -->
-    <div id="hero-section" class="container text-center mt-2">
-      <h1 class="display-3 my-2 text-center">Parallel Edit</h1>
-
-      <h2 class="display-6 text-center">
-        Collaborative Intelligence for <em>Complex</em> Documents
-      </h2>
-
-      <div class="mx-auto my-2 narrative">
-        <p class="mb-2 mt-2">
-          Experience the future of collaborative writing. Parallel Edit allows you to work alongside a hive-mind of
-          specialized AI agents.
-        </p>
-        <ul class="mb-0 text-start d-inline-block">
-          <li>Start with real-time multi-agent collaboration that never sleeps.</li>
-          <li><em>Configure your AI team</em> to verify facts, fix style, and draft content.</li>
-          <li>Work without conflicts using our specialized parallel editing engine.</li>
-          <li>
-            <a href="#" data-bs-toggle="modal" data-bs-target="#infoModal" class="text-decoration-none fw-bold">
-              <i class="bi bi-info-circle-fill me-1"></i> How it works (Architecture)
-            </a>
-          </li>
-        </ul>
-      </div>
-    </div>
-
-    <!-- Demo Scenarios Header -->
-    <div class="row mb-3">
-      <div class="col-12 text-center">
-        <h3 class="h5 mb-3">Start with a Scenario</h3>
-      </div>
-      <div class="col-12">
-        <!-- Cards Container -->
-        <div class="row g-3 justify-content-center" id="demo-cards-container">
-          <!-- Demo cards will be dynamically inserted here by script.js -->
-        </div>
-      </div>
-    </div>
-
-    <hr class="my-5 opacity-25">
-
-    <!-- Sample Prompts Section (Moved here) -->
-    <div class="row mb-4 justify-content-center">
-      <div class="col-lg-8">
-        <div id="sample-prompts-container" class="d-flex flex-wrap gap-2 justify-content-center">
-          <!-- Sample prompts will be dynamically inserted here -->
-        </div>
-      </div>
-    </div>
+  <!-- Main Content -->
+  <div class="main-container">
+    <!-- Alert Container -->
+    <div id="alert-container" class="position-fixed top-0 start-50 translate-middle-x p-3"
+      style="z-index: 9999; max-width: 500px; width: 90%;"></div>
 
     <!-- Editor Section -->
-    <div class="row g-4">
-      <div class="col-lg-7">
-        <div class="card shadow-sm h-100">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <span class="fw-bold" id="document-title">Agreement.docx</span>
-            <div class="d-flex gap-2">
-              <div class="vr"></div>
-              <label for="file-upload" class="btn btn-sm btn-outline-primary mb-0" title="Upload PDF or Text file">
-                <i class="bi bi-upload"></i> Upload
-              </label>
-              <input type="file" id="file-upload" accept=".pdf,.txt,.md" style="display: none;">
-            </div>
+    <div class="editor-wrapper">
+      <div class="editor-header">
+        <div class="d-flex align-items-center gap-3">
+          <input type="text" id="document-title" class="form-control form-control-sm document-title-input"
+            placeholder="Untitled Document" value="Untitled Document">
+        </div>
+
+        <div class="d-flex align-items-center gap-3">
+          <div class="editor-stats">
+            <span class="stat-item" id="char-count">0 characters</span>
+            <span class="stat-separator">•</span>
+            <span class="stat-item" id="line-count">1 line</span>
           </div>
-          <div id="editor-container"></div>
+          <div class="vr"></div>
+          <label for="file-upload" class="btn btn-sm btn-outline-primary mb-0" title="Upload file">
+            <i class="bi bi-upload"></i> Upload
+          </label>
+          <input type="file" id="file-upload" accept=".txt,.md,.js,.py,.html,.css,.json" style="display: none;">
         </div>
       </div>
 
-      <div class="col-lg-5">
-        <div class="row g-3 h-100">
-          <!-- AI Co-Pilot Panel -->
-          <div class="col-12">
-            <div class="card shadow-sm border-0 bg-body-tertiary">
-              <div class="card-header bg-primary text-white">
-                <i class="bi bi-robot me-2"></i>AI Co-Pilot
-              </div>
-              <div class="card-body">
-                <textarea id="custom-prompt" class="form-control mb-2" rows="2"
-                  placeholder="e.g. Add a liability cap of $50k"></textarea>
-                <div class="d-grid gap-2">
-                  <button id="btn-trigger" class="btn btn-primary btn-sm">
-                    <i class="bi bi-play-fill me-1"></i>Apply Instructions
-                  </button>
-                </div>
-                <div id="ai-status" class="badge bg-secondary d-none mt-2">Thinking...</div>
-              </div>
-            </div>
-          </div>
+      <div id="editor-container"></div>
+    </div>
 
-          <!-- Multi-Agent Activity Panel -->
-          <div class="col-12">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <!-- Pages Panel -->
+      <div class="sidebar-panel">
+        <div class="panel-header">
+          <i class="bi bi-file-earmark-text me-2"></i>
+          Pages
+          <button id="btn-new-page" class="btn btn-sm btn-outline-primary ms-auto"
+            style="padding: 0.15rem 0.5rem; font-size: 0.75rem;">
+            <i class="bi bi-plus-lg"></i> New
+          </button>
+        </div>
+        <div class="panel-body p-2" id="pages-container">
+          <!-- Pages will be dynamically inserted here -->
+        </div>
+      </div>
 
-
-            <!-- Child Agents Activity -->
-            <div class="card shadow-sm border-0 bg-body-tertiary">
-              <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-diagram-3 me-2"></i>Agent Activity</span>
-                <div class="d-flex gap-2 align-items-center">
-                  <span class="badge bg-light text-dark" id="active-agents-count">0 Active</span>
-                  <button id="btn-clear-agents" class="btn btn-sm btn-outline-light py-0"
-                    style="font-size: 0.75rem;">Clear</button>
-                </div>
-              </div>
-              <div class="card-body p-0">
-                <div id="agent-activity-container" class="p-3" style="max-height: 300px; overflow-y: auto;">
-                  <p class="text-muted text-center small mb-0">No agents currently working</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Logs Panel -->
-          <div class="col-12">
-            <div class="card shadow-sm border-0 bg-body-tertiary">
-              <div class="card-header bg-secondary text-white">
-                <i class="bi bi-terminal me-2"></i>Activity Log
-              </div>
-              <div class="card-body p-2">
-                <div id="logs" class="small font-monospace text-muted" style="height: 150px; overflow-y: auto;"></div>
-              </div>
-            </div>
+      <!-- Active Users Panel -->
+      <div class="sidebar-panel">
+        <div class="panel-header" data-bs-toggle="collapse" data-bs-target="#usersCollapse" style="cursor: pointer;">
+          <i class="bi bi-people-fill me-2"></i>
+          Active Users
+          <span class="badge bg-primary ms-auto" id="active-users-count">1</span>
+          <i class="bi bi-chevron-down ms-2 collapse-icon"></i>
+        </div>
+        <div class="collapse" id="usersCollapse">
+          <div class="panel-body" id="users-container">
+            <p class="text-muted text-center small mb-0">Waiting for collaborators...</p>
           </div>
         </div>
+      </div>
+
+      <!-- Session Info Panel -->
+      <div class="sidebar-panel">
+        <div class="panel-header">
+          <i class="bi bi-info-circle me-2"></i>
+          Session Info
+        </div>
+        <div class="panel-body">
+          <div class="info-item">
+            <span class="info-label">Session ID:</span>
+            <code id="session-id" class="session-id-code">Loading...</code>
+          </div>
+          <div class="info-item mt-2">
+            <span class="info-label">Created:</span>
+            <span id="session-time" class="small text-muted">Just now</span>
+          </div>
+          <button id="btn-copy-link" class="btn btn-sm btn-outline-primary w-100 mt-3">
+            <i class="bi bi-clipboard me-1"></i>
+            Copy Session Link
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Actions Panel -->
+      <div class="sidebar-panel">
+        <div class="panel-header">
+          <i class="bi bi-lightning-fill me-2"></i>
+          Quick Actions
+        </div>
+        <div class="panel-body">
+          <button id="btn-download" class="btn btn-sm btn-outline-secondary w-100 mb-2">
+            <i class="bi bi-download me-1"></i>
+            Download
+          </button>
+          <button id="btn-clear" class="btn btn-sm btn-outline-danger w-100">
+            <i class="bi bi-trash me-1"></i>
+            Clear All
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Welcome Toast -->
+  <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11000">
+    <div id="welcomeToast" class="toast hide" role="alert" aria-live="assertive" aria-atomic="true">
+      <div class="toast-header">
+        <span class="brand-emoji me-2">🐍</span>
+        <strong class="me-auto">Welcome to snakey.io</strong>
+        <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+      </div>
+      <div class="toast-body">
+        You joined as <strong id="toast-username"></strong>.
+        Click your name in the sidebar to change it.
       </div>
     </div>
   </div>
 
-  <!-- WELCOME MODAL -->
-  <div class="modal fade" id="welcomeModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
+  <!-- Edit Name Modal -->
+  <div class="modal fade" id="editNameModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
       <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Welcome to Parallel Editing</h5>
-        </div>
-        <div class="modal-body">
-          <p class="mb-2">Enter your name to join the session:</p>
-          <input type="text" id="user-name-input" class="form-control" placeholder="Your Name" autofocus>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-primary" id="btn-join">Join Session</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- INFO MODAL -->
-  <div class="modal fade" id="infoModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title fw-bold"><i class="bi bi-info-circle-fill me-2 text-primary"></i>How Parallel Edit
-            Works</h5>
+        <div class="modal-header border-0 pb-0">
+          <h6 class="modal-title">Edit Your Name</h6>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <div class="row g-4">
-            <div class="col-md-6">
-              <h6 class="fw-bold text-primary mb-3">1. Background Technology</h6>
-              <div class="d-flex mb-3">
-                <i class="bi bi-braces fs-4 me-3 text-secondary"></i>
-                <div>
-                  <strong>Y.js & CRDTs:</strong> The core is built on <a href="https://github.com/yjs/yjs"
-                    target="_blank">Y.js</a>, a high-performance CRDT library. This ensures that every keystroke is
-                  eventually consistent across all users without merge conflicts.
-                </div>
-              </div>
-              <div class="d-flex mb-3">
-                <i class="bi bi-broadcast fs-4 me-3 text-secondary"></i>
-                <div>
-                  <strong>WebRTC:</strong> We use <a href="https://github.com/yjs/y-webrtc" target="_blank">y-webrtc</a>
-                  for peer-to-peer data syncing. No central database stores your document state; it lives in the mesh of
-                  connected browsers.
-                </div>
-              </div>
-              <div class="d-flex">
-                <i class="bi bi-file-earmark-richtext fs-4 me-3 text-secondary"></i>
-                <div>
-                  <strong>Quill Editor:</strong> The editor is <a href="https://quilljs.com/" target="_blank">Quill</a>,
-                  bound to Y.js types. This allows rich text handling that multiple users (and bots) can edit
-                  simultaneously.
-                </div>
-              </div>
-            </div>
+          <input type="text" id="edit-name-input" class="form-control" placeholder="Your Name">
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-sm btn-primary" id="btn-save-name">Save</button>
+        </div>
+      </div>
 
-            <div class="col-md-6">
-              <h6 class="fw-bold text-success mb-3">2. AI Architecture</h6>
-              <div class="d-flex mb-3">
-                <i class="bi bi-robot fs-4 me-3 text-secondary"></i>
-                <div>
-                  <strong>Agentic Workflow:</strong> When you request a change, a "Supervisor" agent plans the task and
-                  delegates sub-tasks to specialized agents (e.g., "Legal Verifier", "Drafter").
-                </div>
-              </div>
-              <div class="d-flex">
-                <i class="bi bi-pen fs-4 me-3 text-secondary"></i>
-                <div>
-                  <strong>Conflict-Free AI:</strong> Agents don't just "overwrite" text. They perform precise atomic
-                  operations on the shared Y.js document model. This treats the AI as just another user in the session,
-                  preventing it from accidentally deleting your work while you type.
-                </div>
-              </div>
+      <!-- Rename Page Modal -->
+      <div class="modal fade" id="renamePageModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+          <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+              <h6 class="modal-title">Rename Page</h6>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-
-            <div class="col-12">
-              <div class="alert alert-secondary mb-0 small">
-                <strong>Tech Stack:</strong> Vanilla JS (ES Modules), Bootstrap 5, Y.js, Quill, WebRTC, OpenAI/LLM API.
-              </div>
+            <div class="modal-body">
+              <input type="text" id="rename-page-input" class="form-control" placeholder="Page Name">
+            </div>
+            <div class="modal-footer border-0 pt-0">
+              <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="button" class="btn btn-sm btn-warning" id="btn-clear-page">
+                <i class="bi bi-eraser"></i> Clear
+              </button>
+              <button type="button" class="btn btn-sm btn-danger" id="btn-delete-page">
+                <i class="bi bi-trash"></i> Delete
+              </button>
+              <button type="button" class="btn btn-sm btn-primary" id="btn-save-page-name">Save</button>
             </div>
           </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
-        </div>
       </div>
     </div>
   </div>
 
-  <div class="modal fade" id="llmConfigModal" tabindex="-1">
-    <div class="modal-dialog">
+  <!-- Clear All Confirmation Modal -->
+  <div class="modal fade" id="clearAllModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
       <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Settings</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <label>API Key</label><input type="password" id="llm-api-key" class="form-control mb-2">
-          <label>Base URL</label><input type="text" id="llm-url" class="form-control mb-2"
-            placeholder="https://api.openai.com/v1">
-          <label>Model</label>
-          <select id="llm-model" class="form-select">
-            <!-- Options populated by JS -->
-          </select>
-        </div>
-        <div class="modal-footer"><button type="button" class="btn btn-primary" id="save-llm-config">Save</button></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal fade" id="diffModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="diff-modal-title">Edit Details</h5>
+        <div class="modal-header border-0 pb-0">
+          <h6 class="modal-title text-danger">Clear All Content?</h6>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <!-- Visual Diff Option -->
-          <ul class="nav nav-tabs mb-3" id="diffTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-              <button class="nav-link active" id="visual-tab" data-bs-toggle="tab" data-bs-target="#visual-diff-pane"
-                type="button" role="tab">Visual Diff</button>
-            </li>
-            <li class="nav-item" role="presentation">
-              <button class="nav-link" id="raw-tab" data-bs-toggle="tab" data-bs-target="#raw-diff-pane" type="button"
-                role="tab">Before vs After</button>
-            </li>
-          </ul>
-
-          <div class="tab-content" id="diffTabContent">
-            <!-- VISUAL DIFF PANE (Inline) -->
-            <div class="tab-pane fade show active" id="visual-diff-pane" role="tabpanel">
-              <div id="diff-visual-container" class="p-3 border rounded bg-light"
-                style="font-family: monospace; white-space: pre-wrap;"></div>
-            </div>
-
-            <!-- RAW SIDE-BY-SIDE PANE -->
-            <div class="tab-pane fade" id="raw-diff-pane" role="tabpanel">
-              <div class="row g-2">
-                <div class="col-6">
-                  <h6 class="text-danger">Before</h6>
-                  <div id="diff-before-content" class="p-3 border rounded bg-light-subtle text-muted small"
-                    style="white-space: pre-wrap; max-height: 400px; overflow-y: auto;"></div>
-                </div>
-                <div class="col-6">
-                  <h6 class="text-success">After</h6>
-                  <div id="diff-after-content" class="p-3 border rounded bg-light-subtle small"
-                    style="white-space: pre-wrap; max-height: 400px; overflow-y: auto;"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
+          <p class="small text-muted mb-0">This action cannot be undone. Are you sure you want to clear the editor?</p>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-sm btn-danger" id="btn-confirm-clear-all">Clear All</button>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- Generic Confirmation Modal (for Page Actions) -->
+  <div class="modal fade" id="confirmationModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content">
+        <div class="modal-header border-0 pb-0">
+          <h6 class="modal-title" id="confirm-modal-title">Confirm Action</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="small text-muted mb-0" id="confirm-modal-body">Are you sure?</p>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-sm btn-primary" id="btn-confirm-action">Confirm</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
   <script type="importmap">
-{
-  "imports": {
-    "yjs": "https://esm.sh/yjs@13",
-    "y-webrtc": "https://esm.sh/y-webrtc@10?external=yjs",
-    "y-indexeddb": "https://esm.sh/y-indexeddb?external=yjs",
-    "y-quill": "https://esm.sh/y-quill?external=yjs,quill",
-    "quill": "https://esm.sh/quill@1.3.6",
-    "quill-cursors": "https://esm.sh/quill-cursors@2.2.1?external=quill",
-    "fast-diff": "https://esm.sh/fast-diff"
+  {
+    "imports": {
+      "yjs": "https://esm.sh/yjs@13",
+      "y-webrtc": "https://esm.sh/y-webrtc@10?external=yjs",
+      "y-indexeddb": "https://esm.sh/y-indexeddb?external=yjs",
+      "y-quill": "https://esm.sh/y-quill?external=yjs,quill",
+      "quill": "https://esm.sh/quill@1.3.6",
+      "quill-cursors": "https://esm.sh/quill-cursors@2.2.1?external=quill"
+    }
   }
-}
-</script>
-  <script src="https://cdn.jsdelivr.net/npm/@gramex/ui@0.3.1/dist/dark-theme.js"></script>
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script type="module" src="script.js"></script>
 </body>
